@@ -1,0 +1,4 @@
+transformers==4.41.2
+torch==2.5.1
+gradio==5.5.0
+pyannote.audio==3.3.2
