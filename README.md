@@ -4,47 +4,64 @@ DiCoW (Diarization-Conditioned Whisper) enhances OpenAI’s Whisper ASR model by
 
 ## Features
 
-- **Multi-Speaker ASR**: Handles multi-speaker audio using diarization-aware transcription.
-- **Flexible Input Sources**:
-  - **Microphone**: Record and transcribe live audio.
-  - **Audio File Upload**: Upload pre-recorded audio files for transcription.
-- **Diarization Support**: Powered by `pyannote/speaker-diarization-3.1` for accurate speaker segmentation.
-- **Built with 🤗 Transformers**: Uses the latest Whisper checkpoints for robust transcription.
+- **Multi-Speaker ASR**: Handles multi-speaker audio using diarization-aware transcription.  
+- **Flexible Input Sources**:  
+  - **Microphone**: Record and transcribe live audio.  
+  - **Audio File Upload**: Upload pre-recorded audio files for transcription.  
+- **Diarization Support**: Powered by `pyannote/speaker-diarization-3.1` for accurate speaker segmentation.  
+- **Built with 🤗 Transformers**: Uses the latest Whisper checkpoints for robust transcription.  
 
----
+**Disclaimer**: This version of DiCoW currently supports **English only** and is still under **active development**. Expect frequent updates and feature improvements.
 
 ## Demo
-Run the app directly in your browser with the following link: https://b6c05a6fdfd3cd4dee.gradio.live
 
-![DiCoW-v1 Demo](img.png)
----
+![DiCoW-v1 Demo](img.png)  
+
+### Online Usage
+Run the app directly in your browser with [Gradio app](https://6b1070555dee3d4dc8.gradio.live).
 
 ## Installation
 
 ### Requirements
-- Python 3.11+
-- Required Python Libraries:
-  - `gradio`
-  - `transformers`
-  - `pyannote.audio`
+
+Before running the app, ensure you have the following installed:
+
+- **Python 3.11**  
+- **FFmpeg**: Required for audio processing.
+- Python Libraries:  
+  - `gradio`  
+  - `transformers`  
+  - `pyannote.audio`  
   - `torch`
-  - 
+
 ### Setup
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/your-username/DiCoW-v1.git
-   cd DiCoW-v1
-
+1. Clone the repository:  
+```bash 
+   git clone https://github.com/your-username/DiCoW-v1.git  
+   cd DiCoW-v1  
+```
 2. Setup dependencies:
    ```bash
    pip install -r requirements.txt
    ```
 3. Export your Hugging Face API token:
    ```bash
-   export HF_HOME=''
+   export HF_TOKEN=''
    ```
-4. Run the app:
-   ```bash
-    python app.py
-    ```
+## Usage
+
+Run the application locally:  
+```bash
+python app.py  
+```
+
+Once the server is running, access the app in your browser at `http://localhost:7860`.
+
+### Modes
+
+1. **Microphone**: Use your device’s microphone for live transcription.  
+2. **Audio File Upload**: Upload pre-recorded audio files for diarization-conditioned transcription.  
+
+## Contributing
+We welcome contributions! If you’d like to add features or improve the app, please open an issue or submit a pull request.
