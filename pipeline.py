@@ -46,7 +46,6 @@ class DiCoWPipeline(AutomaticSpeechRecognitionPipeline):
         sf_write(resampled_path, inp_aud, sr, format='wav')
         inputs = resampled_path
 
-        # import pdb; pdb.set_trace()
         generator = super().preprocess(inputs, chunk_length_s=chunk_length_s, stride_length_s=stride_length_s)
         sample = next(generator)
         
@@ -67,7 +66,6 @@ class DiCoWPipeline(AutomaticSpeechRecognitionPipeline):
         yield sample
 
     def _forward(self, model_inputs, return_timestamps=False, **generate_kwargs):
-        # print('_fwd', model_inputs)
         attention_mask = model_inputs.pop("attention_mask", None)
         stride = model_inputs.pop("stride", None)
         segment_size = model_inputs.pop("segment_size", None)
@@ -193,8 +191,6 @@ class DiCoWPipeline(AutomaticSpeechRecognitionPipeline):
                 all_equal_ts = all_equal_ts and nts == ts
     
             i = j
-
-        # assert len(timestamps) == len(processed_timestamps)
     
         result = []
         prev_end = 0
@@ -215,7 +211,6 @@ class DiCoWPipeline(AutomaticSpeechRecognitionPipeline):
             self, model_outputs, decoder_kwargs: Optional[Dict] = None, return_timestamps=None, return_language=None
     ):
         per_spk_outputs = self.tokenizer.batch_decode(model_outputs[0]['tokens'], decode_with_timestamps=True, skip_special_tokens=True)
-        # import pdb; pdb.set_trace()
         full_text = "\n".join([f"|Speaker {spk}|: {self.postprocess_text(text)}" for spk, text in enumerate(per_spk_outputs)])
         return {"text": full_text, "per_spk_outputs": per_spk_outputs}
 
