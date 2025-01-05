@@ -33,6 +33,8 @@ Before running the app, ensure you have the following installed:
   - `transformers`  
   - `pyannote.audio`  
   - `torch`
+  - `librosa`
+  - `soundfile`
 
 ### Setup
 
@@ -65,3 +67,29 @@ Once the server is running, access the app in your browser at `http://localhost:
 
 ## Contributing
 We welcome contributions! If you’d like to add features or improve the app, please open an issue or submit a pull request.
+
+## Citation
+If you use our model or code, please, cite:
+```
+@misc{polok2024dicowdiarizationconditionedwhispertarget,
+      title={DiCoW: Diarization-Conditioned Whisper for Target Speaker Automatic Speech Recognition}, 
+      author={Alexander Polok and Dominik Klement and Martin Kocour and Jiangyu Han and Federico Landini and Bolaji Yusuf and Matthew Wiesner and Sanjeev Khudanpur and Jan Černocký and Lukáš Burget},
+      year={2024},
+      eprint={2501.00114},
+      archivePrefix={arXiv},
+      primaryClass={eess.AS},
+      url={https://arxiv.org/abs/2501.00114}, 
+}
+@misc{polok2024targetspeakerasrwhisper,
+      title={Target Speaker ASR with Whisper}, 
+      author={Alexander Polok and Dominik Klement and Matthew Wiesner and Sanjeev Khudanpur and Jan Černocký and Lukáš Burget},
+      year={2024},
+      eprint={2409.09543},
+      archivePrefix={arXiv},
+      primaryClass={eess.AS},
+      url={https://arxiv.org/abs/2409.09543}, 
+}
+```
+
+## Contact
+For more information, feel free to contact us: [ipoloka@fit.vut.cz](mailto:ipoloka@fit.vut.cz), [xkleme15@vutbr.cz](mailto:xkleme15@vutbr.cz).
