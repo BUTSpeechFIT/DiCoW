@@ -1,5 +1,9 @@
+import os
+import re
 from typing import Dict, Optional
 
+from librosa import load as libr_load, to_mono as libr_to_mono
+from soundfile import write as sf_write
 import torch
 from transformers.pipelines.automatic_speech_recognition import AutomaticSpeechRecognitionPipeline
 
@@ -32,8 +36,19 @@ class DiCoWPipeline(AutomaticSpeechRecognitionPipeline):
     def preprocess(self, inputs, chunk_length_s=0, stride_length_s=None):
         if not isinstance(inputs, str):
             raise ValueError("For now input must be a string representing a path to an audio file")
+            
+    
+        input_dirname = os.path.dirname(inputs)
+        input_basename = os.path.basename(inputs)
+        resampled_path = f'{input_dirname}/resampled.wav'
+
+        inp_aud, sr = libr_load(inputs, sr=16_000, mono=True)
+        sf_write(resampled_path, inp_aud, sr, format='wav')
+        inputs = resampled_path
+
         generator = super().preprocess(inputs, chunk_length_s=chunk_length_s, stride_length_s=stride_length_s)
         sample = next(generator)
+        
         diariation_output = self.diarization_pipeline(inputs)
         per_speaker_samples = []
         for speaker in diariation_output.labels():
@@ -117,9 +132,85 @@ class DiCoWPipeline(AutomaticSpeechRecognitionPipeline):
         extra = model_inputs
         return {"is_last": is_last, **out, **extra}
 
+    @staticmethod
+    def postprocess_text(input_string):
+        pattern = r"<\|([\d.]+)\|>"
+        matches = re.finditer(pattern, input_string)
+        timestamps = [(float(match.group(1)), match.start(), match.end()) for match in matches]
+        if not timestamps or len(timestamps) <= 2:
+            return input_string
+    
+        # The whole algorithm boils down to either removing the entire chain of timestamps - the case where all of them are the same (i.e. ...<a><a><a>... -> ......)
+        # or removing all but the corner ones (i.e. <a><b><c><c><d> -> <a><d>) - the case where we have end and start timestamps and some rubbish in-between.
+    
+        processed_timestamps = []
+        i = 0
+        while i < len(timestamps):
+            ts, st, et = timestamps[i]
+    
+            if i < len(timestamps) - 1 or processed_timestamps[-1][-1] != st:
+                processed_timestamps.append((ts, st, et))
+    
+            if i == len(timestamps) - 1:
+                break
+    
+            j = i + 1
+            nts, nst, net = timestamps[j]
+            all_equal_ts = nts == ts
+            prev_et = et
+            while nst - prev_et == 0:
+                # Skip all but the last timestamp. If the last in the chain has the same TS as the processed_timestamps tail, pop processed_timestamps.
+                # If not, append it while skipping all the previous ones.
+                # In other words, keep appending (-2, X, X) as long as the next one is in the chain and then decide what to do with the last one if the next one is not in the chain.
+    
+                if j == len(timestamps) - 1:
+                    if net == len(input_string) and prev_et != nst:
+                        processed_timestamps.append((nts, nst, net))
+                        j += 1
+                    break
+                else:
+                    if timestamps[j + 1][1] - net == 0:
+                        processed_timestamps.append((-2, nst, net))
+                    else:
+                        if all_equal_ts:
+                            # If there's a chain of eq timestamps at the beginning, we need to keep at least one.
+                            if i != 0:
+                                processed_timestamps[i] = (-1, st, et)
+                            processed_timestamps.append((-2, nst, net))
+                        else:
+                            # If there's a chain of tags at the beginning with all ts not being equal, we need to keep the last one.
+                            if i == 0:
+                                processed_timestamps[i] = (-2, st, et)
+                            processed_timestamps.append((nts, nst, net))
+                        j += 1
+                        break
+    
+                j += 1
+                prev_et = net
+                nts, nst, net = timestamps[j]
+                all_equal_ts = all_equal_ts and nts == ts
+    
+            i = j
+    
+        result = []
+        prev_end = 0
+        for i, (ts, st, et) in enumerate(processed_timestamps):
+            result.append(f'{input_string[prev_end:st]}')
+            if ts == -1:
+                result.append(' ')
+            elif ts == -2:
+                # Empty string, so no need to append anything
+                pass
+            else:
+                result.append(f'<|{ts:.2f}|>')
+            prev_end = et
+    
+        return "".join(result)
+
     def postprocess(
             self, model_outputs, decoder_kwargs: Optional[Dict] = None, return_timestamps=None, return_language=None
     ):
         per_spk_outputs = self.tokenizer.batch_decode(model_outputs[0]['tokens'], decode_with_timestamps=True, skip_special_tokens=True)
-        full_text = "\n".join([f"|Speaker {spk}|: {text}" for spk, text in enumerate(per_spk_outputs)])
+        full_text = "\n".join([f"|Speaker {spk}|: {self.postprocess_text(text)}" for spk, text in enumerate(per_spk_outputs)])
         return {"text": full_text, "per_spk_outputs": per_spk_outputs}
+
