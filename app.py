@@ -7,10 +7,8 @@ from pyannote.audio import Pipeline
 from pipeline import DiCoWPipeline
 import os
 
-BATCH_SIZE = 8
-FILE_LIMIT_MB = 1000
 
-device = 0 if torch.cuda.is_available() else "cpu"
+device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
 
 MODEL_NAME = "BUT-FIT/DiCoW_v1"
 dicow = DiCoWForConditionalGeneration.from_pretrained(MODEL_NAME)
@@ -18,14 +16,14 @@ feature_extractor = AutoFeatureExtractor.from_pretrained(MODEL_NAME)
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
 diar_pipeline = Pipeline.from_pretrained(
     "pyannote/speaker-diarization-3.1",
-    use_auth_token=os.environ['HF_TOKEN'])
+    use_auth_token=os.environ['HF_TOKEN']).to(device)
 pipeline = DiCoWPipeline(dicow, diarization_pipeline=diar_pipeline, feature_extractor=feature_extractor,
-                         tokenizer=tokenizer)
-
+                         tokenizer=tokenizer, device=device)
 
 def transcribe(inputs):
     if inputs is None:
-        raise gr.Error("No audio file submitted! Please upload or record an audio file before submitting your request.")
+        raise gr.Error(
+            "No audio file submitted! Please upload or record an audio file before submitting your request.")
 
     text = pipeline(inputs, return_timestamps=True)["text"]
     return text
@@ -70,4 +68,44 @@ file_transcribe = gr.Interface(
 with demo:
     gr.TabbedInterface([mf_transcribe, file_transcribe], ["Microphone", "Audio file"])
 
-demo.queue().launch(ssr_mode=False, share=True)
+    gr.Markdown(
+        """
+        ## Features
+
+        - **Multi-Speaker ASR**: Handles multi-speaker audio using diarization-aware transcription.  
+        - **Flexible Input Sources**:  
+          - **Microphone**: Record and transcribe live audio.  
+          - **Audio File Upload**: Upload pre-recorded audio files for transcription.  
+        - **Diarization Support**: Powered by `pyannote/speaker-diarization-3.1` for accurate speaker segmentation.  
+        - **Built with 🤗 Transformers**: Uses the latest Whisper checkpoints for robust transcription.  
+
+        **Disclaimer**: This version of DiCoW currently supports **English only** and is still under **active development**. Expect frequent updates and feature improvements.
+
+        ## Citation
+        If you use our model or code, please, cite:
+        ```bibtex
+        @misc{polok2024dicowdiarizationconditionedwhispertarget,
+              title={DiCoW: Diarization-Conditioned Whisper for Target Speaker Automatic Speech Recognition}, 
+              author={Alexander Polok and Dominik Klement and Martin Kocour and Jiangyu Han and Federico Landini and Bolaji Yusuf and Matthew Wiesner and Sanjeev Khudanpur and Jan Černocký and Lukáš Burget},
+              year={2024},
+              eprint={2501.00114},
+              archivePrefix={arXiv},
+              primaryClass={eess.AS},
+              url={https://arxiv.org/abs/2501.00114}, 
+        }
+        @misc{polok2024targetspeakerasrwhisper,
+              title={Target Speaker ASR with Whisper}, 
+              author={Alexander Polok and Dominik Klement and Matthew Wiesner and Sanjeev Khudanpur and Jan Černocký and Lukáš Burget},
+              year={2024},
+              eprint={2409.09543},
+              archivePrefix={arXiv},
+              primaryClass={eess.AS},
+              url={https://arxiv.org/abs/2409.09543}, 
+        }
+        ```
+
+        ## Contributing
+        We welcome contributions! If you’d like to add features or improve our pipeline, please open an issue or submit a pull request.
+        """
+    )
+demo.queue().launch(ssr_mode=False, share=False)
