@@ -1,4 +1,4 @@
-# DiCoW-v1: Diarization-Conditioned Whisper for Target Speaker Automatic Speech Recognition
+# DiCoW: Diarization-Conditioned Whisper for Target Speaker Automatic Speech Recognition
 
 DiCoW (Diarization-Conditioned Whisper) enhances OpenAI’s Whisper ASR model by integrating **speaker diarization** for multi-speaker transcription. The app leverages `pyannote/speaker-diarization-3.1` to segment speakers and provides diarization-conditioned transcription for long-form audio inputs.
 
@@ -18,7 +18,7 @@ DiCoW (Diarization-Conditioned Whisper) enhances OpenAI’s Whisper ASR model by
 ![DiCoW-v1 Demo](img.png)  
 
 ### Online Usage
-Run the app directly in your browser with [Gradio app](https://6b1070555dee3d4dc8.gradio.live).
+Run the app directly in your browser with [Gradio app](https://pccnect.fit.vutbr.cz/gradio-demo).
 
 ## Installation
 
