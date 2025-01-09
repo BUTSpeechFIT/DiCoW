@@ -2,6 +2,8 @@
 
 DiCoW (Diarization-Conditioned Whisper) enhances OpenAI’s Whisper ASR model by integrating **speaker diarization** for multi-speaker transcription. The app leverages `pyannote/speaker-diarization-3.1` to segment speakers and provides diarization-conditioned transcription for long-form audio inputs.
 
+Training and inference source codes can be found here: [TS-ASR-Whisper](https://github.com/BUTSpeechFIT/TS-ASR-Whisper)
+
 ## Features
 
 - **Multi-Speaker ASR**: Handles multi-speaker audio using diarization-aware transcription.  
