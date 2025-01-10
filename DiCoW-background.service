@@ -1,0 +1,29 @@
+[Unit]
+Description=DiCoW background server
+RequiresMountsFor=/home
+#Before=euasr-proxy.service
+
+[Service]
+Type=simple
+
+# set the user and group under which the servis is executed.
+User=ipoloka
+Group=ipoloka
+
+# set the main repository of the Solution
+WorkingDirectory=/home/ipoloka/DiCoW/
+
+# set the output log files. Or comment it if you want to see logs using `journalctl -e -u euasr-server.service`
+StandardOutput=append:/home/ipoloka/DiCoW/DiCoW-background.service.out
+StandardError=append:/home/ipoloka/DiCoW/DiCoW-background.service.err
+
+# set the main repository of the Solution
+ExecStart=/home/ipoloka/DiCoW/run_server.sh
+ExecReload=/bin/kill -s HUP $MAINPID
+ExecStop=/bin/kill -s QUIT $MAINPID
+PrivateTmp=true
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

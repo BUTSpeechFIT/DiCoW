@@ -62,6 +62,22 @@ python app.py
 
 Once the server is running, access the app in your browser at `http://localhost:7860`.
 
+### Linux service
+
+If you want to run this demo on background, it may be good to make a service out of it. (some distros kill the background jobs when user logs out, hence kill the demo).
+
+To register the demo as service, first edit `./run_server.sh` and `./DiCoW-background.service` and set proper paths and users. It is important to set the conda correctly in `./run_server.sh` 
+as the service is started out of the userspace (`.profile`).
+
+Then register and start the service (run as root):
+```
+systemctl enable ./DiCoW-background.service #register the service
+systemctl start DiCoW-background.service #start
+systemctl status DiCoW-background.service #check if it is running
+systemctl stop DiCoW-background.service #stop
+systemctl disable DiCoW-background.service #will not start on restart anymore
+```
+
 ### Modes
 
 1. **Microphone**: Use your device’s microphone for live transcription.  
