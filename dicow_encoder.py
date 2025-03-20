@@ -14,17 +14,17 @@ class DiCoWEncoder(WhisperEncoder):
 
     def __init__(self, config: DiCoWConfig):
         super().__init__(config)
-        if config.additional_layer:
+        self.ctc_weight = config.ctc_weight
+        if config.additional_layer and self.ctc_weight > 0.0:
             self.additional_layer = WhisperEncoderLayer(config)
-        if config.additional_self_attention_layer:
+        if config.additional_self_attention_layer and self.ctc_weight > 0.0:
             self.additional_self_attention_layer = WHISPER_ATTENTION_CLASSES[config._attn_implementation](
                 embed_dim=config.d_model,
                 num_heads=config.encoder_attention_heads,
                 dropout=config.attention_dropout,
                 config=config,
             )
-        self.ctc_weight = config.ctc_weight
-        if config.sub_sample:
+        if config.sub_sample and self.ctc_weight > 0.0:
             self.subsample_conv1 = nn.Conv1d(
                 in_channels=config.d_model,
                 out_channels=config.d_model,
@@ -41,14 +41,23 @@ class DiCoWEncoder(WhisperEncoder):
                 padding=1,
                 bias=False,
             )
-        self.lm_head = nn.Linear(config.d_model, config.vocab_size + 1, bias=False)
+        if self.ctc_weight > 0.0:
+            self.lm_head = nn.Linear(config.d_model, config.vocab_size + 1, bias=False)
         self.final_dropout = nn.Dropout(config.final_dropout)
         if config.use_target_amplifiers:
             num_amplifiers = self.config.apply_target_amp_to_n_layers if self.config.apply_target_amp_to_n_layers != -1 else len(
                 self.layers)
+            self.initial_amplifier = TargetSpeakerAmplifier(config.d_model,
+                                       non_target_rate=config.non_target_amplifier_value,
+                                       is_diagonal=config.target_amp_is_diagonal,
+                                       bias_only=config.target_amp_bias_only,
+                                       use_silence=config.target_amp_use_silence,
+                                       use_target=config.target_amp_use_target,
+                                       use_overlap=config.target_amp_use_overlap,
+                                       use_non_target=config.target_amp_use_non_target)
             self.target_amplifiers = nn.ModuleList([
                 TargetSpeakerAmplifier(config.d_model,
-                                       non_target_rate=0.0 if i == 0 else 1.0,
+                                       non_target_rate=1.0,
                                        is_diagonal=config.target_amp_is_diagonal,
                                        bias_only=config.target_amp_bias_only,
                                        use_silence=config.target_amp_use_silence,
@@ -217,6 +226,9 @@ class DiCoWEncoder(WhisperEncoder):
             embed_pos = embed_pos[
                 torch.clamp(((vad_mask[:, 1, :] + vad_mask[:, 3, :]).cumsum(dim=-1) - 1), min=0).to(torch.long)]
 
+        if self.config.use_target_amplifiers:
+            inputs_embeds = self.initial_amplifier(inputs_embeds, vad_mask)
+
         hidden_states = inputs_embeds + embed_pos
 
         hidden_states = nn.functional.dropout(hidden_states, p=self.dropout, training=self.training)
@@ -279,20 +291,21 @@ class DiCoWEncoder(WhisperEncoder):
             )
 
         if hasattr(self, "interaction"):
-            outputs.last_hidden_state = self.interaction(
+            outputs.last_hidden_state =  self.interaction(
                 outputs.last_hidden_state,
                 per_group_sizes
             )
             outputs.hidden_states = (*outputs.hidden_states[:-1], outputs.last_hidden_state)
 
-        if self.config.additional_layer:
+
+        if hasattr(self, "additional_layer"):
             inter_output, = self.additional_layer(
                 outputs.last_hidden_state,
                 attention_mask=None,
                 output_attentions=output_attentions,
                 layer_head_mask=None,
             )
-        elif self.config.additional_self_attention_layer:
+        elif hasattr(self, "additional_self_attention_layer"):
             inter_output, _, __ = self.additional_self_attention_layer(
                 outputs.last_hidden_state,
                 attention_mask=None,
@@ -303,7 +316,7 @@ class DiCoWEncoder(WhisperEncoder):
             inter_output = outputs.last_hidden_state
 
         inter_output = self.final_dropout(inter_output)
-        if self.config.sub_sample:
+        if hasattr(self, "subsample_conv2"):
             inter_output = self.subsample_conv2(self.subsample_conv1(inter_output.transpose(1, 2))).transpose(1, 2)
         logits = self.lm_head(inter_output)
 
@@ -312,3 +325,4 @@ class DiCoWEncoder(WhisperEncoder):
             hidden_states=outputs.hidden_states,
             attentions=outputs.attentions,
         )
+

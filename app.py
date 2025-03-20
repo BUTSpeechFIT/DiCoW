@@ -8,17 +8,37 @@ from pipeline import DiCoWPipeline
 import os
 
 
+def create_lower_uppercase_mapping(tokenizer):
+    tokenizer.upper_cased_tokens = {}
+    vocab = tokenizer.get_vocab()
+    for token, index in vocab.items():
+        if len(token) < 1:
+            continue
+        if token[0] == 'Ġ' and len(token) > 1:
+            lower_cased_token = token[0] + token[1].lower() + (token[2:] if len(token) > 2 else '')
+        else:
+            lower_cased_token = token[0].lower() + token[1:]
+        if lower_cased_token != token:
+            lower_index = vocab.get(lower_cased_token, None)
+            if lower_index is not None:
+                tokenizer.upper_cased_tokens[lower_index] = index
+            else:
+                pass
+
+
 device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
 
-MODEL_NAME = "BUT-FIT/DiCoW_v1"
+MODEL_NAME = "BUT-FIT/DiCoW_v2"
 dicow = DiCoWForConditionalGeneration.from_pretrained(MODEL_NAME)
 feature_extractor = AutoFeatureExtractor.from_pretrained(MODEL_NAME)
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+create_lower_uppercase_mapping(tokenizer)
 diar_pipeline = Pipeline.from_pretrained(
     "pyannote/speaker-diarization-3.1",
     use_auth_token=os.environ['HF_TOKEN']).to(device)
 pipeline = DiCoWPipeline(dicow, diarization_pipeline=diar_pipeline, feature_extractor=feature_extractor,
                          tokenizer=tokenizer, device=device)
+
 
 def transcribe(inputs):
     if inputs is None:
@@ -38,7 +58,7 @@ mf_transcribe = gr.Interface(
         # gr.Radio(["transcribe", "translate"], label="Task", value="transcribe"),
     ],
     outputs="text",
-    title="DiCoW-v1: Diarization-Conditioned Whisper",
+    title="DiCoW-v2: Diarization-Conditioned Whisper",
     description=(
         "DiCoW (Diarization-Conditioned Whisper) enhances Whisper with diarization-aware transcription, enabling it to handle multi-speaker audio effectively. "
         "Use your microphone to transcribe audio with speaker-aware precision! This demo uses the"
@@ -54,7 +74,7 @@ file_transcribe = gr.Interface(
         gr.Audio(sources="upload", type="filepath", label="Audio file"),
     ],
     outputs="text",
-    title="DiCoW-v1: Diarization-Conditioned Whisper",
+    title="DiCoW-v2: Diarization-Conditioned Whisper",
     description=(
         "DiCoW (Diarization-Conditioned Whisper) supports diarization-aware transcription for multi-speaker audio files. "
         f"Upload an audio file to experience state-of-the-art multi-speaker transcription. Demo uses the checkpoint "
@@ -78,8 +98,6 @@ with demo:
           - **Audio File Upload**: Upload pre-recorded audio files for transcription.  
         - **Diarization Support**: Powered by `pyannote/speaker-diarization-3.1` for accurate speaker segmentation.  
         - **Built with 🤗 Transformers**: Uses the latest Whisper checkpoints for robust transcription.  
-
-        **Disclaimer**: This version of DiCoW currently supports **English only** and is still under **active development**. Expect frequent updates and feature improvements.
 
         ## Citation
         If you use our model or code, please, cite:
