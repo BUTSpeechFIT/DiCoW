@@ -86,6 +86,9 @@ systemctl disable DiCoW-background.service #will not start on restart anymore
 ## Contributing
 We welcome contributions! If you’d like to add features or improve the app, please open an issue or submit a pull request.
 
+## License
+This project is licensed under the [Apache License 2.0](LICENSE).
+
 ## Citation
 If you use our model or code, please, cite:
 ```
