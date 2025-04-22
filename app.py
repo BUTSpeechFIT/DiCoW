@@ -66,7 +66,7 @@ mf_transcribe = gr.Interface(
         "DiCoW (Diarization-Conditioned Whisper) enhances Whisper with diarization-aware transcription, enabling it to handle multi-speaker audio effectively. "
         "Use your microphone to transcribe audio with speaker-aware precision! This demo uses the"
         f" checkpoint [{MODEL_NAME}](https://huggingface.co/{MODEL_NAME}) and 🤗 Transformers for diarization-conditioned transcription. "
-        "Speaker diarization is powered by the `pyannote/speaker-diarization-3.1`."
+        "Speaker diarization is powered by the `pyannote/speaker-diarization-3.1`. **Note:** CTC joint decoding is disabled."
     ),
     allow_flagging="never",
 )
@@ -82,7 +82,7 @@ file_transcribe = gr.Interface(
         "DiCoW (Diarization-Conditioned Whisper) supports diarization-aware transcription for multi-speaker audio files. "
         f"Upload an audio file to experience state-of-the-art multi-speaker transcription. Demo uses the checkpoint "
         f"[{MODEL_NAME}](https://huggingface.co/{MODEL_NAME}) and 🤗 Transformers. "
-        "Speaker diarization is powered by the `pyannote/speaker-diarization-3.1`."
+        "Speaker diarization is powered by the `pyannote/speaker-diarization-3.1`. **Note:** CTC joint decoding is disabled."
     ),
     allow_flagging="never",
 )
