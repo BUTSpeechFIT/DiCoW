@@ -33,12 +33,13 @@ dicow = DiCoWForConditionalGeneration.from_pretrained(MODEL_NAME)
 feature_extractor = AutoFeatureExtractor.from_pretrained(MODEL_NAME)
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
 create_lower_uppercase_mapping(tokenizer)
+dicow.set_tokenizer(tokenizer)
 diar_pipeline = Pipeline.from_pretrained(
     "pyannote/speaker-diarization-3.1",
     use_auth_token=os.environ['HF_TOKEN']).to(device)
+diar_pipeline.embedding_batch_size = 16
 pipeline = DiCoWPipeline(dicow, diarization_pipeline=diar_pipeline, feature_extractor=feature_extractor,
                          tokenizer=tokenizer, device=device)
-
 
 def transcribe(inputs):
     if inputs is None:
@@ -46,6 +47,7 @@ def transcribe(inputs):
             "No audio file submitted! Please upload or record an audio file before submitting your request.")
 
     text = pipeline(inputs, return_timestamps=True)["text"]
+    torch.cuda.empty_cache()
     return text
 
 
@@ -86,7 +88,7 @@ file_transcribe = gr.Interface(
 
 # if __name__ == "__main__":
 with demo:
-    gr.TabbedInterface([mf_transcribe, file_transcribe], ["Microphone", "Audio file"])
+    gr.TabbedInterface([ file_transcribe, mf_transcribe], ["Audio file", "Microphone"])
 
     gr.Markdown(
         """
@@ -126,4 +128,4 @@ with demo:
         We welcome contributions! If you’d like to add features or improve our pipeline, please open an issue or submit a pull request.
         """
     )
-demo.queue().launch(ssr_mode=False, share=False)
+demo.queue(max_size=5).launch( share=False, root_path="/gradio-demo")

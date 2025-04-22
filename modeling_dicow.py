@@ -1,6 +1,7 @@
 import copy
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
+import gradio as gr
 import numpy as np
 import torch
 import torch.utils.checkpoint
@@ -48,6 +49,7 @@ class DiCoW(WhisperModel):
     def __init__(self, config):
         super().__init__(config)
         self.encoder = DiCoWEncoder(config)
+        self.yield_lang = True
 
     def forward(
             self,
@@ -162,11 +164,11 @@ class DiCoWForConditionalGeneration(WhisperForConditionalGeneration):
         self.tokenizer = tokenizer
 
     def detect_language(
-        self,
-        input_features: Optional[torch.FloatTensor] = None,
-        encoder_outputs: Optional[Union[torch.FloatTensor, BaseModelOutput]] = None,
-        generation_config: Optional[GenerationConfig] = None,
-        num_segment_frames: int = 3000,
+            self,
+            input_features: Optional[torch.FloatTensor] = None,
+            encoder_outputs: Optional[Union[torch.FloatTensor, BaseModelOutput]] = None,
+            generation_config: Optional[GenerationConfig] = None,
+            num_segment_frames: int = 3000,
     ) -> torch.Tensor:
         """
         Detects language from log-mel input features or encoder_outputs
@@ -210,12 +212,13 @@ class DiCoWForConditionalGeneration(WhisperForConditionalGeneration):
 
         generation_config = generation_config or self.generation_config
         decoder_input_ids = (
-            torch.ones((batch_size, 1), device=self.device, dtype=torch.long)
-            * generation_config.decoder_start_token_id
+                torch.ones((batch_size, 1), device=self.device, dtype=torch.long)
+                * generation_config.decoder_start_token_id
         )
 
         with torch.no_grad():
-            logits = self(**inputs, decoder_input_ids=decoder_input_ids, vad_mask=self.vad_mask).logits[:, -1]
+            logits = self(**inputs, decoder_input_ids=decoder_input_ids,
+                          vad_mask=self.vad_mask[:, :, :num_segment_frames//2]).logits[:, -1]
 
         non_lang_mask = torch.ones_like(logits[0], dtype=torch.bool)
         non_lang_mask[list(generation_config.lang_to_id.values())] = False
@@ -223,6 +226,10 @@ class DiCoWForConditionalGeneration(WhisperForConditionalGeneration):
         logits[:, non_lang_mask] = -np.inf
 
         lang_ids = logits.argmax(-1)
+
+        if self.yield_lang:
+            gr.Info(f"Detected language ids: {self.tokenizer.decode(lang_ids)}")
+            self.yield_lang = False
 
         return lang_ids
 
@@ -574,7 +581,7 @@ class DiCoWForConditionalGeneration(WhisperForConditionalGeneration):
             assistant_model: Optional["PreTrainedModel"] = None,
             **kwargs,
     ):
-
+        self.yield_lang = True
         gen_c, _ = self._prepare_generation_config(generation_config, **kwargs)
         gen_mode = gen_c.get_generation_mode(assistant_model)
 
