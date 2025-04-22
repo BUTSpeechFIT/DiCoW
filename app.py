@@ -44,7 +44,7 @@ pipeline = DiCoWPipeline(dicow, diarization_pipeline=diar_pipeline, feature_extr
 def transcribe(inputs):
     if inputs is None:
         raise gr.Error(
-            "No audio file submitted! Please upload or record an audio file before submitting your request.")
+            "No audio file submitted! Please upload or record an audio file before submitting your request. **Note:** You might press the 'Submit' button before the audio was displayed.")
 
     text = pipeline(inputs, return_timestamps=True)["text"]
     torch.cuda.empty_cache()
@@ -129,6 +129,6 @@ with demo:
         We welcome contributions! If you’d like to add features or improve our pipeline, please open an issue or submit a pull request.
         """
     )
-    mf_audio.stop_recording(lambda _: gr.Warning(f"Please wait for the audio to be displayed before submitting!"))
+    mf_audio.start_recording(lambda _: gr.Warning(f"Please wait for the audio to be displayed before submitting!"))
 
 demo.queue(max_size=5).launch( share=False, root_path="/gradio-demo")
