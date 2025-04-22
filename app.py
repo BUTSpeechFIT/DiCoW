@@ -53,11 +53,12 @@ def transcribe(inputs):
 
 demo = gr.Blocks(theme=gr.themes.Ocean())
 
+mf_audio = gr.Audio(sources="microphone", type="filepath", format="wav")
+
+
 mf_transcribe = gr.Interface(
     fn=transcribe,
-    inputs=[
-        gr.Audio(sources="microphone", type="filepath"),
-        # gr.Radio(["transcribe", "translate"], label="Task", value="transcribe"),
+    inputs=[mf_audio
     ],
     outputs="text",
     title="DiCoW-v2: Diarization-Conditioned Whisper",
@@ -128,4 +129,6 @@ with demo:
         We welcome contributions! If you’d like to add features or improve our pipeline, please open an issue or submit a pull request.
         """
     )
+    mf_audio.stop_recording(lambda _: gr.Warning(f"Please wait for the audio to be displayed before submitting!"))
+
 demo.queue(max_size=5).launch( share=False, root_path="/gradio-demo")
