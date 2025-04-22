@@ -44,7 +44,8 @@ pipeline = DiCoWPipeline(dicow, diarization_pipeline=diar_pipeline, feature_extr
 def transcribe(inputs):
     if inputs is None:
         raise gr.Error(
-            "No audio file submitted! Please upload or record an audio file before submitting your request. **Note:** You might press the 'Submit' button before the audio was displayed.")
+            "No audio file submitted! Please upload or record an audio file before submitting your request. "
+            "Note: You might have pressed the 'Submit' button before the audio was displayed.")
 
     text = pipeline(inputs, return_timestamps=True)["text"]
     torch.cuda.empty_cache()
