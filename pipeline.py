@@ -63,6 +63,8 @@ class DiCoWPipeline(AutomaticSpeechRecognitionPipeline):
         sample['input_features'] = sample['input_features'].repeat(len(per_speaker_samples), 1, 1)
         sample['attention_mask'] = torch.ones(sample['input_features'].shape[0], sample['input_features'].shape[2],
                                               dtype=torch.bool, device=sample['input_features'].device)
+        if "num_frames" in sample:
+            del sample["num_frames"]
         yield sample
 
     def _forward(self, model_inputs, return_timestamps=False, **generate_kwargs):
@@ -92,19 +94,6 @@ class DiCoWPipeline(AutomaticSpeechRecognitionPipeline):
             if return_timestamps == "word":
                 generate_kwargs["return_token_timestamps"] = True
                 generate_kwargs["return_segments"] = True
-
-                if stride is not None:
-                    if isinstance(stride, tuple):
-                        generate_kwargs["num_frames"] = stride[0] // self.feature_extractor.hop_length
-                    else:
-                        generate_kwargs["num_frames"] = [s[0] // self.feature_extractor.hop_length for s in stride]
-
-                else:
-                    if isinstance(segment_size, int):
-                        generate_kwargs["num_frames"] = segment_size // self.feature_extractor.hop_length
-                    else:
-                        generate_kwargs["num_frames"] = segment_size[0] // self.feature_extractor.hop_length
-
             generate_kwargs["input_features"] = inputs
 
         tokens = self.model.generate(
