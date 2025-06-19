@@ -199,7 +199,24 @@ class DiCoWPipeline(AutomaticSpeechRecognitionPipeline):
     def postprocess(
             self, model_outputs, decoder_kwargs: Optional[Dict] = None, return_timestamps=None, return_language=None
     ):
-        per_spk_outputs = self.tokenizer.batch_decode(model_outputs[0]['tokens'], decode_with_timestamps=True, skip_special_tokens=True)
-        full_text = "\n".join([f"|Speaker {spk}|: {self.postprocess_text(text)}" for spk, text in enumerate(per_spk_outputs)])
+        per_spk_outputs = self.tokenizer.batch_decode(
+            model_outputs[0]['tokens'], decode_with_timestamps=True, skip_special_tokens=True
+        )
+
+        formatted_lines = []
+        for spk, text in enumerate(per_spk_outputs):
+            processed_text = self.postprocess_text(text)
+
+            # Split on each timestamp pair
+            # This regex finds "<|start|>...<|end|>" pairs with everything inside
+            segments = re.findall(r"(<\|\d+\.\d+\|>.*?<\|\d+\.\d+\|>)", processed_text)
+
+            # Build the output for this speaker
+            speaker_header = f"🗣️ Speaker {spk}:\n"
+            speaker_body = "\n".join(segments)
+            formatted_lines.append(f"{speaker_header}{speaker_body}")
+
+        full_text = "\n\n".join(formatted_lines)
+
         return {"text": full_text, "per_spk_outputs": per_spk_outputs}
 
