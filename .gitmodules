@@ -1,0 +1,3 @@
+[submodule "DiariZen"]
+	path = DiariZen
+	url = https://github.com/Lakoc/DiariZen.git
