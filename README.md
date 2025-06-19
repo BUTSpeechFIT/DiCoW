@@ -1,6 +1,6 @@
 # DiCoW: Diarization-Conditioned Whisper for Target Speaker Automatic Speech Recognition
 
-DiCoW (Diarization-Conditioned Whisper) enhances OpenAI’s Whisper ASR model by integrating **speaker diarization** for multi-speaker transcription. The app leverages `pyannote/speaker-diarization-3.1` to segment speakers and provides diarization-conditioned transcription for long-form audio inputs.
+DiCoW (Diarization-Conditioned Whisper) enhances OpenAI’s Whisper ASR model by integrating **speaker diarization** for multi-speaker transcription. The app leverages `BUT-FIT/diarizen-wavlm-large-s80-mlc` to segment speakers and provides diarization-conditioned transcription for long-form audio inputs.
 
 Training and inference source codes can be found here: [TS-ASR-Whisper](https://github.com/BUTSpeechFIT/TS-ASR-Whisper)
 
@@ -10,10 +10,9 @@ Training and inference source codes can be found here: [TS-ASR-Whisper](https://
 - **Flexible Input Sources**:  
   - **Microphone**: Record and transcribe live audio.  
   - **Audio File Upload**: Upload pre-recorded audio files for transcription.  
-- **Diarization Support**: Powered by `pyannote/speaker-diarization-3.1` for accurate speaker segmentation.  
+- **Diarization Support**: Powered by `BUT-FIT/diarizen-wavlm-large-s80-mlc` for accurate speaker segmentation.  
 - **Built with 🤗 Transformers**: Uses the latest Whisper checkpoints for robust transcription.  
 
-**Disclaimer**: This version of DiCoW currently supports **English only** and is still under **active development**. Expect frequent updates and feature improvements.
 
 ## Demo
 
@@ -42,8 +41,8 @@ Before running the app, ensure you have the following installed:
 
 1. Clone the repository:  
     ```bash 
-   git clone https://github.com/your-username/DiCoW-v1.git  
-   cd DiCoW-v1  
+   git clone https://github.com/BUTSpeechFIT/DiCoW.git
+   cd DiCoW  
     ```
 2. Setup dependencies:
    ```bash
@@ -56,7 +55,6 @@ Before running the app, ensure you have the following installed:
    ```
 4. Install the DiariZen dependencies:
    ```bash
-   pip install silero-vad  
    cd DiariZen
    cd pyannote-audio
    pip install -e .
@@ -67,7 +65,7 @@ Before running the app, ensure you have the following installed:
 
 Run the application locally:  
 ```bash
-python app.py  
+  python app.py  
 ```
 
 Once the server is running, access the app in your browser at `http://localhost:7860`.
@@ -102,23 +100,39 @@ This project is licensed under the [Apache License 2.0](LICENSE).
 ## Citation
 If you use our model or code, please, cite:
 ```
-@misc{polok2024dicowdiarizationconditionedwhispertarget,
-      title={DiCoW: Diarization-Conditioned Whisper for Target Speaker Automatic Speech Recognition}, 
-      author={Alexander Polok and Dominik Klement and Martin Kocour and Jiangyu Han and Federico Landini and Bolaji Yusuf and Matthew Wiesner and Sanjeev Khudanpur and Jan Černocký and Lukáš Burget},
-      year={2024},
-      eprint={2501.00114},
-      archivePrefix={arXiv},
-      primaryClass={eess.AS},
-      url={https://arxiv.org/abs/2501.00114}, 
+@article{POLOK2026101841,
+    title = {DiCoW: Diarization-conditioned Whisper for target speaker automatic speech recognition},
+    journal = {Computer Speech & Language},
+    volume = {95},
+    pages = {101841},
+    year = {2026},
+    issn = {0885-2308},
+    doi = {https://doi.org/10.1016/j.csl.2025.101841},
+    url = {https://www.sciencedirect.com/science/article/pii/S088523082500066X},
+    author = {Alexander Polok and Dominik Klement and Martin Kocour and Jiangyu Han and Federico Landini and Bolaji Yusuf and Matthew Wiesner and Sanjeev Khudanpur and Jan Černocký and Lukáš Burget},
+    keywords = {Diarization-conditioned Whisper, Target-speaker ASR, Speaker diarization, Long-form ASR, Whisper adaptation},
 }
-@misc{polok2024targetspeakerasrwhisper,
-      title={Target Speaker ASR with Whisper}, 
-      author={Alexander Polok and Dominik Klement and Matthew Wiesner and Sanjeev Khudanpur and Jan Černocký and Lukáš Burget},
-      year={2024},
-      eprint={2409.09543},
-      archivePrefix={arXiv},
-      primaryClass={eess.AS},
-      url={https://arxiv.org/abs/2409.09543}, 
+
+@INPROCEEDINGS{10887683,
+  author={Polok, Alexander and Klement, Dominik and Wiesner, Matthew and Khudanpur, Sanjeev and Černocký, Jan and Burget, Lukáš},
+  booktitle={ICASSP 2025 - 2025 IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP)}, 
+  title={Target Speaker ASR with Whisper}, 
+  year={2025},
+  volume={},
+  number={},
+  pages={1-5},
+  keywords={Transforms;Signal processing;Transformers;Acoustics;Speech processing;target-speaker ASR;diarization conditioning;multi-speaker ASR;Whisper},
+  doi={10.1109/ICASSP49660.2025.10887683}
+}
+
+@misc{polok2025mlcslmchallenge,
+  title={BUT System for the MLC-SLM Challenge}, 
+  author={Alexander Polok and Jiangyu Han and Dominik Klement and Samuele Cornell and Jan Černocký and Lukáš Burget},
+  year={2025},
+  eprint={2506.13414},
+  archivePrefix={arXiv},
+  primaryClass={eess.AS},
+  url={https://arxiv.org/abs/2506.13414}, 
 }
 ```
 

@@ -2,9 +2,7 @@ import torch
 
 import gradio as gr
 from transformers import AutoTokenizer, AutoFeatureExtractor, AutoModelForSpeechSeq2Seq
-from pyannote.audio import Pipeline
 from pipeline import DiCoWPipeline
-import os
 from diarizen.pipelines.inference import DiariZenPipeline
 
 
@@ -62,7 +60,7 @@ mf_transcribe = gr.Interface(
     inputs=[mf_audio
     ],
     outputs="text",
-    title="DiCoW-v2: Diarization-Conditioned Whisper",
+    title="DiCoW: Diarization-Conditioned Whisper",
     description=(
         "DiCoW (Diarization-Conditioned Whisper) enhances Whisper with diarization-aware transcription, enabling it to handle multi-speaker audio effectively. "
         "Use your microphone to transcribe audio with speaker-aware precision! This demo uses the"
@@ -78,7 +76,7 @@ file_transcribe = gr.Interface(
         gr.Audio(sources="upload", type="filepath", label="Audio file"),
     ],
     outputs="text",
-    title="DiCoW-v2: Diarization-Conditioned Whisper",
+    title="DiCoW: Diarization-Conditioned Whisper",
     description=(
         "DiCoW (Diarization-Conditioned Whisper) supports diarization-aware transcription for multi-speaker audio files. "
         f"Upload an audio file to experience state-of-the-art multi-speaker transcription. Demo uses the checkpoint "
@@ -90,6 +88,12 @@ file_transcribe = gr.Interface(
 
 # if __name__ == "__main__":
 with demo:
+    gr.Markdown(
+        """\n
+        ## Warning! ⚠️ 
+        > This version of the model has been fine-tuned specifically on the **MLC-SLM dataset**. As a result, its performance is optimized for this dataset and might not generalize perfectly to other datasets or domains. Use with caution when applying to data outside the scope of MLC-SLM.
+        """
+    )
     gr.TabbedInterface([ file_transcribe, mf_transcribe], ["Audio file", "Microphone"])
 
     gr.Markdown(
@@ -106,23 +110,39 @@ with demo:
         ## Citation
         If you use our model or code, please, cite:
         ```bibtex
-        @misc{polok2024dicowdiarizationconditionedwhispertarget,
-              title={DiCoW: Diarization-Conditioned Whisper for Target Speaker Automatic Speech Recognition}, 
-              author={Alexander Polok and Dominik Klement and Martin Kocour and Jiangyu Han and Federico Landini and Bolaji Yusuf and Matthew Wiesner and Sanjeev Khudanpur and Jan Černocký and Lukáš Burget},
-              year={2024},
-              eprint={2501.00114},
-              archivePrefix={arXiv},
-              primaryClass={eess.AS},
-              url={https://arxiv.org/abs/2501.00114}, 
+        @article{POLOK2026101841,
+            title = {DiCoW: Diarization-conditioned Whisper for target speaker automatic speech recognition},
+            journal = {Computer Speech & Language},
+            volume = {95},
+            pages = {101841},
+            year = {2026},
+            issn = {0885-2308},
+            doi = {https://doi.org/10.1016/j.csl.2025.101841},
+            url = {https://www.sciencedirect.com/science/article/pii/S088523082500066X},
+            author = {Alexander Polok and Dominik Klement and Martin Kocour and Jiangyu Han and Federico Landini and Bolaji Yusuf and Matthew Wiesner and Sanjeev Khudanpur and Jan Černocký and Lukáš Burget},
+            keywords = {Diarization-conditioned Whisper, Target-speaker ASR, Speaker diarization, Long-form ASR, Whisper adaptation},
         }
-        @misc{polok2024targetspeakerasrwhisper,
-              title={Target Speaker ASR with Whisper}, 
-              author={Alexander Polok and Dominik Klement and Matthew Wiesner and Sanjeev Khudanpur and Jan Černocký and Lukáš Burget},
-              year={2024},
-              eprint={2409.09543},
-              archivePrefix={arXiv},
-              primaryClass={eess.AS},
-              url={https://arxiv.org/abs/2409.09543}, 
+        
+        @INPROCEEDINGS{10887683,
+          author={Polok, Alexander and Klement, Dominik and Wiesner, Matthew and Khudanpur, Sanjeev and Černocký, Jan and Burget, Lukáš},
+          booktitle={ICASSP 2025 - 2025 IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP)}, 
+          title={Target Speaker ASR with Whisper}, 
+          year={2025},
+          volume={},
+          number={},
+          pages={1-5},
+          keywords={Transforms;Signal processing;Transformers;Acoustics;Speech processing;target-speaker ASR;diarization conditioning;multi-speaker ASR;Whisper},
+          doi={10.1109/ICASSP49660.2025.10887683}
+        }
+        
+        @misc{polok2025mlcslmchallenge,
+          title={BUT System for the MLC-SLM Challenge}, 
+          author={Alexander Polok and Jiangyu Han and Dominik Klement and Samuele Cornell and Jan Černocký and Lukáš Burget},
+          year={2025},
+          eprint={2506.13414},
+          archivePrefix={arXiv},
+          primaryClass={eess.AS},
+          url={https://arxiv.org/abs/2506.13414}, 
         }
         ```
 
