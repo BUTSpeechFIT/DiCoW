@@ -41,18 +41,28 @@ Before running the app, ensure you have the following installed:
 ### Setup
 
 1. Clone the repository:  
-```bash 
+    ```bash 
    git clone https://github.com/your-username/DiCoW-v1.git  
    cd DiCoW-v1  
-```
+    ```
 2. Setup dependencies:
    ```bash
    pip install -r requirements.txt
    ```
-3. Export your Hugging Face API token:
+3. Clone DiariZen submodule:
    ```bash
-   export HF_TOKEN=''
+   git submodule init
+   git submodule update
    ```
+4. Install the DiariZen dependencies:
+   ```bash
+   pip install silero-vad  
+   cd DiariZen
+   cd pyannote-audio
+   pip install -e .
+   cd .. & cd ..
+   ```
+   
 ## Usage
 
 Run the application locally:  

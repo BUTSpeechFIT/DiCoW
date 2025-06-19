@@ -1,6 +1,7 @@
-transformers==4.41.2
+transformers==4.42.0
 torch==2.5.1
 gradio==5.5.0
-pyannote.audio==3.3.2
 librosa==0.10.2.post1
 soundfile==0.13.0
+toml
+silero-vad

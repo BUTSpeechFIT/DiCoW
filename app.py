@@ -1,11 +1,11 @@
 import torch
 
 import gradio as gr
-from transformers import AutoTokenizer, AutoFeatureExtractor
-from modeling_dicow import DiCoWForConditionalGeneration
+from transformers import AutoTokenizer, AutoFeatureExtractor, AutoModelForSpeechSeq2Seq
 from pyannote.audio import Pipeline
 from pipeline import DiCoWPipeline
 import os
+from diarizen.pipelines.inference import DiariZenPipeline
 
 
 def create_lower_uppercase_mapping(tokenizer):
@@ -28,16 +28,16 @@ def create_lower_uppercase_mapping(tokenizer):
 
 device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
 
-MODEL_NAME = "BUT-FIT/DiCoW_v2"
-dicow = DiCoWForConditionalGeneration.from_pretrained(MODEL_NAME)
+MODEL_NAME = "BUT-FIT/DiCoW_MLC"
+DIARIZATION_MODEL="BUT-FIT/diarizen-wavlm-large-s80-mlc"
+dicow = AutoModelForSpeechSeq2Seq.from_pretrained(MODEL_NAME, trust_remote_code=True)
 feature_extractor = AutoFeatureExtractor.from_pretrained(MODEL_NAME)
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
 create_lower_uppercase_mapping(tokenizer)
 dicow.set_tokenizer(tokenizer)
-diar_pipeline = Pipeline.from_pretrained(
-    "pyannote/speaker-diarization-3.1",
-    use_auth_token=os.environ['HF_TOKEN']).to(device)
+diar_pipeline = DiariZenPipeline.from_pretrained(DIARIZATION_MODEL).to(device)
 diar_pipeline.embedding_batch_size = 16
+
 pipeline = DiCoWPipeline(dicow, diarization_pipeline=diar_pipeline, feature_extractor=feature_extractor,
                          tokenizer=tokenizer, device=device)
 
@@ -67,7 +67,7 @@ mf_transcribe = gr.Interface(
         "DiCoW (Diarization-Conditioned Whisper) enhances Whisper with diarization-aware transcription, enabling it to handle multi-speaker audio effectively. "
         "Use your microphone to transcribe audio with speaker-aware precision! This demo uses the"
         f" checkpoint [{MODEL_NAME}](https://huggingface.co/{MODEL_NAME}) and 🤗 Transformers for diarization-conditioned transcription. "
-        "Speaker diarization is powered by the `pyannote/speaker-diarization-3.1`. **Note:** CTC joint decoding is disabled."
+        f"Speaker diarization is powered by the `{DIARIZATION_MODEL}`. **Note:** CTC joint decoding is disabled."
     ),
     allow_flagging="never",
 )
@@ -83,7 +83,7 @@ file_transcribe = gr.Interface(
         "DiCoW (Diarization-Conditioned Whisper) supports diarization-aware transcription for multi-speaker audio files. "
         f"Upload an audio file to experience state-of-the-art multi-speaker transcription. Demo uses the checkpoint "
         f"[{MODEL_NAME}](https://huggingface.co/{MODEL_NAME}) and 🤗 Transformers. "
-        "Speaker diarization is powered by the `pyannote/speaker-diarization-3.1`. **Note:** CTC joint decoding is disabled."
+        f"Speaker diarization is powered by the `{DIARIZATION_MODEL}`. **Note:** CTC joint decoding is disabled."
     ),
     allow_flagging="never",
 )
@@ -100,7 +100,7 @@ with demo:
         - **Flexible Input Sources**:  
           - **Microphone**: Record and transcribe live audio.  
           - **Audio File Upload**: Upload pre-recorded audio files for transcription.  
-        - **Diarization Support**: Powered by `pyannote/speaker-diarization-3.1` for accurate speaker segmentation.  
+        - **Diarization Support**: Powered by `BUT-FIT/diarizen-wavlm-large-s80-mlc` for accurate speaker segmentation.  
         - **Built with 🤗 Transformers**: Uses the latest Whisper checkpoints for robust transcription.  
 
         ## Citation

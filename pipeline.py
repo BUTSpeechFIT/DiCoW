@@ -58,7 +58,7 @@ class DiCoWPipeline(AutomaticSpeechRecognitionPipeline):
         for i, speaker_samples in enumerate(per_speaker_samples):
             stno_mask = self.get_stno_mask(diarization_mask, i)
             stno_masks.append(stno_mask)
-        sample['vad_mask'] = torch.stack(stno_masks, axis=0).to(sample['input_features'].device,
+        sample['stno_mask'] = torch.stack(stno_masks, axis=0).to(sample['input_features'].device,
                                                                 dtype=sample['input_features'].dtype)
         sample['input_features'] = sample['input_features'].repeat(len(per_speaker_samples), 1, 1)
         sample['attention_mask'] = torch.ones(sample['input_features'].shape[0], sample['input_features'].shape[2],
