@@ -26,7 +26,7 @@ def create_lower_uppercase_mapping(tokenizer):
 
 device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
 
-MODEL_NAME = "BUT-FIT/DiCoW_MLC"
+MODEL_NAME = "BUT-FIT/DiCoW_v3_MLC"
 DIARIZATION_MODEL="BUT-FIT/diarizen-wavlm-large-s80-mlc"
 dicow = AutoModelForSpeechSeq2Seq.from_pretrained(MODEL_NAME, trust_remote_code=True)
 feature_extractor = AutoFeatureExtractor.from_pretrained(MODEL_NAME)
