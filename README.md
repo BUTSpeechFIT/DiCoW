@@ -4,6 +4,8 @@ DiCoW (Diarization-Conditioned Whisper) enhances OpenAI’s Whisper ASR model by
 
 Training and inference source codes can be found here: [TS-ASR-Whisper](https://github.com/BUTSpeechFIT/TS-ASR-Whisper)
 
+> 🔄 **Note:** The updated model and inference pipeline are available in the [`dicow_v3`](https://github.com/BUTSpeechFIT/DiCoW/tree/dicow_v3) branch.
+
 ## Features
 
 - **Multi-Speaker ASR**: Handles multi-speaker audio using diarization-aware transcription.  
