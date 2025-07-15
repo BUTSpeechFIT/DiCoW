@@ -26,8 +26,8 @@ def create_lower_uppercase_mapping(tokenizer):
 
 device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
 
-MODEL_NAME = "BUT-FIT/DiCoW_v3_MLC"
-DIARIZATION_MODEL="BUT-FIT/diarizen-wavlm-large-s80-mlc"
+MODEL_NAME = "BUT-FIT/DiCoW_v3_2"
+DIARIZATION_MODEL="BUT-FIT/diarizen-wavlm-large-s80-md"
 dicow = AutoModelForSpeechSeq2Seq.from_pretrained(MODEL_NAME, trust_remote_code=True)
 feature_extractor = AutoFeatureExtractor.from_pretrained(MODEL_NAME)
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
@@ -88,12 +88,6 @@ file_transcribe = gr.Interface(
 
 # if __name__ == "__main__":
 with demo:
-    gr.Markdown(
-        """\n
-        ## Warning! ⚠️ 
-        > This version of the model has been fine-tuned specifically on the **MLC-SLM dataset**. As a result, its performance is optimized for this dataset and might not generalize perfectly to other datasets or domains. Use with caution when applying to data outside the scope of MLC-SLM.
-        """
-    )
     gr.TabbedInterface([ file_transcribe, mf_transcribe], ["Audio file", "Microphone"])
 
     gr.Markdown(
@@ -104,7 +98,7 @@ with demo:
         - **Flexible Input Sources**:  
           - **Microphone**: Record and transcribe live audio.  
           - **Audio File Upload**: Upload pre-recorded audio files for transcription.  
-        - **Diarization Support**: Powered by `BUT-FIT/diarizen-wavlm-large-s80-mlc` for accurate speaker segmentation.  
+        - **Diarization Support**: Powered by `BUT-FIT/diarizen-wavlm-large-s80-md` for accurate speaker segmentation.  
         - **Built with 🤗 Transformers**: Uses the latest Whisper checkpoints for robust transcription.  
 
         ## Citation
@@ -135,15 +129,6 @@ with demo:
           doi={10.1109/ICASSP49660.2025.10887683}
         }
         
-        @misc{polok2025mlcslmchallenge,
-          title={BUT System for the MLC-SLM Challenge}, 
-          author={Alexander Polok and Jiangyu Han and Dominik Klement and Samuele Cornell and Jan Černocký and Lukáš Burget},
-          year={2025},
-          eprint={2506.13414},
-          archivePrefix={arXiv},
-          primaryClass={eess.AS},
-          url={https://arxiv.org/abs/2506.13414}, 
-        }
         ```
 
         ## Contributing
