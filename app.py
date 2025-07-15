@@ -35,6 +35,7 @@ create_lower_uppercase_mapping(tokenizer)
 dicow.set_tokenizer(tokenizer)
 diar_pipeline = DiariZenPipeline.from_pretrained(DIARIZATION_MODEL).to(device)
 diar_pipeline.embedding_batch_size = 16
+diar_pipeline.segmentation_batch_size = 16
 
 pipeline = DiCoWPipeline(dicow, diarization_pipeline=diar_pipeline, feature_extractor=feature_extractor,
                          tokenizer=tokenizer, device=device)
@@ -63,9 +64,9 @@ mf_transcribe = gr.Interface(
     title="DiCoW: Diarization-Conditioned Whisper",
     description=(
         "DiCoW (Diarization-Conditioned Whisper) enhances Whisper with diarization-aware transcription, enabling it to handle multi-speaker audio effectively. "
-        "Use your microphone to transcribe audio with speaker-aware precision! This demo uses the"
-        f" checkpoint [{MODEL_NAME}](https://huggingface.co/{MODEL_NAME}) and 🤗 Transformers for diarization-conditioned transcription. "
-        f"Speaker diarization is powered by the `{DIARIZATION_MODEL}`. **Note:** CTC joint decoding is disabled."
+        "Use your microphone to transcribe audio with speaker-aware precision! "
+        f"\nThis demo uses the checkpoint [{MODEL_NAME}](https://huggingface.co/{MODEL_NAME}), "
+        f"speaker diarization is powered by the  [{DIARIZATION_MODEL}](https://huggingface.co/{DIARIZATION_MODEL}). **Note:** CTC joint decoding is disabled."
     ),
     allow_flagging="never",
 )
@@ -80,8 +81,8 @@ file_transcribe = gr.Interface(
     description=(
         "DiCoW (Diarization-Conditioned Whisper) supports diarization-aware transcription for multi-speaker audio files. "
         f"Upload an audio file to experience state-of-the-art multi-speaker transcription. Demo uses the checkpoint "
-        f"[{MODEL_NAME}](https://huggingface.co/{MODEL_NAME}) and 🤗 Transformers. "
-        f"Speaker diarization is powered by the `{DIARIZATION_MODEL}`. **Note:** CTC joint decoding is disabled."
+        f"\nThis demo uses the checkpoint [{MODEL_NAME}](https://huggingface.co/{MODEL_NAME}), "
+        f"speaker diarization is powered by the  [{DIARIZATION_MODEL}](https://huggingface.co/{DIARIZATION_MODEL}). **Note:** CTC joint decoding is disabled."
     ),
     allow_flagging="never",
 )
