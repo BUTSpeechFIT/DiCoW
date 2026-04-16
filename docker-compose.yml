@@ -1,0 +1,11 @@
+services:
+  dicow:
+    build: .
+    image: meetingbott-dicow
+    volumes:
+      # To avoid re-downloading the model at each build
+      - ~/.cache/huggingface:/root/.cache/huggingface
+      - .:/app/data
+    environment:
+      - TRANSFORMERS_OFFLINE=1
+    command: [ "--input-folder", "/app/data", "--output-folder", "/app/data/output", "--file-pattern", "test_2speakers_eng_10s.wav", "--verbose" ]
