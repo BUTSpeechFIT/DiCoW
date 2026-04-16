@@ -180,8 +180,8 @@ def main():
     # Load models
     if args.verbose:
         print("Loading DiCoW model...")
-    # I use the "local" fixed version instead of the HF one, that still relies on the old transformers version
-    from models.dicow.modeling_dicow import DiCoWForConditionalGeneration
+    # We use the modernized version of the repository
+    from DiCoW_v3_2.modeling_dicow import DiCoWForConditionalGeneration
     dicow = DiCoWForConditionalGeneration.from_pretrained(args.dicow_model)
     feature_extractor = AutoFeatureExtractor.from_pretrained(args.dicow_model)
     tokenizer = AutoTokenizer.from_pretrained(args.dicow_model)

@@ -26,7 +26,7 @@ RUN pip install --no-cache-dir torch==2.5.1 torchaudio==2.5.1 --index-url https:
 # Using huggingface/transformers exactly at 4.40.1 which we've securely patched
 RUN pip install --no-cache-dir \
     numpy==1.26.4 \
-    transformers==4.40.1 \
+    transformers==4.55.0 \
     gradio==6.4.0 \
     librosa==0.10.2.post1 \
     soundfile==0.13.0 \
