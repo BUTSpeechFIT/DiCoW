@@ -6,6 +6,10 @@ services:
       # To avoid re-downloading the model at each build
       - ~/.cache/huggingface:/root/.cache/huggingface
       - .:/app/data
+      # Mount source code for fast iteration without rebuilding
+      - ./DiCoW_v3_2:/app/DiCoW_v3_2
+      - ./pipeline.py:/app/pipeline.py
+      - ./inference.py:/app/inference.py
     environment:
       - TRANSFORMERS_OFFLINE=1
     command: [ "--input-folder", "/app/data", "--output-folder", "/app/data/output", "--file-pattern", "test_2speakers_eng_10s.wav", "--verbose" ]

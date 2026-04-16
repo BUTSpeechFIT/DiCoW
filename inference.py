@@ -148,6 +148,8 @@ def process_audio_file(pipeline, audio_path, output_folder, verbose=False):
         return output_path
 
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         print(f"Error processing {audio_path}: {str(e)}")
         return None
 

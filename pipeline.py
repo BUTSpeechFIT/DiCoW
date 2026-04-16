@@ -35,7 +35,11 @@ class DiCoWPipeline(AutomaticSpeechRecognitionPipeline):
     def __init__(self, *args, diarization_pipeline, **kwargs):
         super().__init__(*args, **kwargs)
         self.diarization_pipeline = diarization_pipeline
+
+    def _sanitize_parameters(self, **kwargs):
+        # DiCoW is Whisper-based; parent sets type="ctc" because model_type!="whisper"
         self.type = "seq2seq_whisper"
+        return super()._sanitize_parameters(**kwargs)
 
     def get_diarization_mask(self, per_speaker_samples, audio_length):
         diarization_mask = torch.zeros(len(per_speaker_samples), audio_length)
