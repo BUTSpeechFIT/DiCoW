@@ -23,7 +23,6 @@ RUN pip install --no-cache-dir torch==2.5.1 torchaudio==2.5.1 --index-url https:
 
 # Install machine learning and audio packages
 # Using specific numpy version to avoid Pyannote compatibility issues (numpy 2.0+ breaks it)
-# Using huggingface/transformers exactly at 4.40.1 which we've securely patched
 RUN pip install --no-cache-dir \
     numpy==1.26.4 \
     transformers==4.55.0 \
