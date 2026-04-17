@@ -5,6 +5,7 @@ import glob
 from pathlib import Path
 
 from transformers import AutoTokenizer, AutoFeatureExtractor, AutoModelForSpeechSeq2Seq
+
 from pipeline import DiCoWPipeline
 from diarizen.pipelines.inference import DiariZenPipeline
 
@@ -147,6 +148,8 @@ def process_audio_file(pipeline, audio_path, output_folder, verbose=False):
         return output_path
 
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         print(f"Error processing {audio_path}: {str(e)}")
         return None
 
@@ -179,8 +182,9 @@ def main():
     # Load models
     if args.verbose:
         print("Loading DiCoW model...")
-
-    dicow = AutoModelForSpeechSeq2Seq.from_pretrained(args.dicow_model, trust_remote_code=True)
+    # We use the modernized version of the repository
+    from DiCoW_v3_2.modeling_dicow import DiCoWForConditionalGeneration
+    dicow = DiCoWForConditionalGeneration.from_pretrained(args.dicow_model)
     feature_extractor = AutoFeatureExtractor.from_pretrained(args.dicow_model)
     tokenizer = AutoTokenizer.from_pretrained(args.dicow_model)
     create_lower_uppercase_mapping(tokenizer)

@@ -1,0 +1,23 @@
+services:
+  dicow:
+    build: .
+    image: meetingbott-dicow
+    ports:
+      - "8000:8000"
+    volumes:
+      - ~/.cache/huggingface:/root/.cache/huggingface
+      - ./data:/app/data
+      - ./DiCoW_v3_2:/app/DiCoW_v3_2
+      - ./pipeline.py:/app/pipeline.py
+      - ./inference.py:/app/inference.py
+      - ./api:/app/api
+    environment:
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - MAX_CONCURRENT_JOBS=4
+      - MAX_QUEUE_SIZE=50
+      - UPLOAD_DIR=/app/data/uploads
+      - RESULTS_DIR=/app/data/results
+      - DB_PATH=/app/data/jobs.db
+      - DATA_DIR=/app/data
+      - TTL_HOURS=24

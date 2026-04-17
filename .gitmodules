@@ -1,3 +1,6 @@
 [submodule "DiariZen"]
 	path = DiariZen
 	url = https://github.com/Lakoc/DiariZen.git
+[submodule "DiCoW_v3_2"]
+	path = DiCoW_v3_2
+	url = https://github.com/yro7/DiCoW_v3_2
