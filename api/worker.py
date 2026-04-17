@@ -127,7 +127,7 @@ class Worker:
         if input_data["mode"] == "single_file":
             audio_path = input_data["file_path"]
 
-            result = self.pipeline(audio_path, return_timestamps=True)
+            result = self.pipeline(audio_path, return_timestamps="word")
 
             duration_seconds = librosa_get_duration(filename=audio_path)
 
@@ -178,7 +178,7 @@ class Worker:
             for audio_path in files:
                 logger.info(f"Processing batch file: {audio_path}")
 
-                result = self.pipeline(audio_path, return_timestamps=True)
+                result = self.pipeline(audio_path, return_timestamps="word")
                 duration = librosa_get_duration(filename=audio_path)
                 total_duration += duration
 
