@@ -37,7 +37,7 @@ def parse_arguments():
     parser.add_argument(
         "--dicow-model",
         type=str,
-        default="BUT-FIT/DiCoW_v3_2",
+        default="BUT-FIT/SE-DiCoW",
         help="DiCoW model name or path"
     )
 
@@ -183,8 +183,7 @@ def main():
     if args.verbose:
         print("Loading DiCoW model...")
     # We use the modernized version of the repository
-    from DiCoW_v3_2.modeling_dicow import DiCoWForConditionalGeneration
-    dicow = DiCoWForConditionalGeneration.from_pretrained(args.dicow_model)
+    dicow = AutoModelForSpeechSeq2Seq.from_pretrained(args.dicow_model, trust_remote_code=True)
     feature_extractor = AutoFeatureExtractor.from_pretrained(args.dicow_model)
     tokenizer = AutoTokenizer.from_pretrained(args.dicow_model)
     create_lower_uppercase_mapping(tokenizer)

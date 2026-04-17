@@ -44,4 +44,4 @@ RUN chmod +x /app/inference.py
 
 EXPOSE 8000
 
-ENTRYPOINT ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+ENTRYPOINT ["python", "-m", "uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -7,7 +7,6 @@ services:
     volumes:
       - ~/.cache/huggingface:/root/.cache/huggingface
       - ./data:/app/data
-      - ./DiCoW_v3_2:/app/DiCoW_v3_2
       - ./pipeline.py:/app/pipeline.py
       - ./inference.py:/app/inference.py
       - ./api:/app/api
