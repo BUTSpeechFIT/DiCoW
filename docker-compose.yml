@@ -2,12 +2,22 @@ services:
   dicow:
     build: .
     image: meetingbott-dicow
+    ports:
+      - "8000:8000"
     volumes:
-      # To avoid re-downloading the model at each build
       - ~/.cache/huggingface:/root/.cache/huggingface
-      - .:/app/data
-      # Mount source code for fast iteration without rebuilding
+      - ./data:/app/data
       - ./DiCoW_v3_2:/app/DiCoW_v3_2
       - ./pipeline.py:/app/pipeline.py
       - ./inference.py:/app/inference.py
-    command: [ "--input-folder", "/app/data", "--output-folder", "/app/data/output", "--file-pattern", "test_2speakers_eng_10s.wav", "--verbose" ]
+      - ./api:/app/api
+    environment:
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - MAX_CONCURRENT_JOBS=4
+      - MAX_QUEUE_SIZE=50
+      - UPLOAD_DIR=/app/data/uploads
+      - RESULTS_DIR=/app/data/results
+      - DB_PATH=/app/data/jobs.db
+      - DATA_DIR=/app/data
+      - TTL_HOURS=24
