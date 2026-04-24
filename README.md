@@ -1,6 +1,6 @@
 # DiCoW Docker API
 
-Asynchronous REST API for multi-speaker audio transcription using DiCoW (Diarization-Conditioned Whisper).
+Asynchronous REST API for multi-speaker audio transcription using SE-DiCoW (Diarization-Conditioned Whisper).
 
 ## 🚀 Quick Start
 
@@ -76,10 +76,10 @@ curl -X POST http://localhost:8000/transcribe \
 
 Edit `docker-compose.yml`:
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `MAX_CONCURRENT_JOBS` | Max concurrent jobs | `4` |
-| `TTL_HOURS` | Job retention time (hours) | `24` |
+| Variable              | Description                | Default |
+| --------------------- | -------------------------- | ------- |
+| `MAX_CONCURRENT_JOBS` | Max concurrent jobs        | `4`     |
+| `TTL_HOURS`           | Job retention time (hours) | `24`    |
 
 ## 📚 Full Documentation
 

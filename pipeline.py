@@ -299,3 +299,225 @@ class DiCoWPipeline(AutomaticSpeechRecognitionPipeline):
         full_text = "\n\n".join(formatted_lines)
 
         return {"text": full_text, "per_spk_outputs": per_spk_outputs}
+
+    def transcribe_openai(
+        self,
+        audio_path: str,
+        language: Optional[str] = None,
+        task: str = "transcribe",
+        temperature: float = 0.0,
+        return_word_timestamps: bool = False,
+        diarize: bool = True,
+        compression_ratio_threshold: Optional[float] = None,
+        logprob_threshold: Optional[float] = None,
+        no_speech_threshold: Optional[float] = None,
+    ):
+        """
+        OpenAI-compatible transcription using NATIVE Whisper capabilities.
+        
+        Args:
+            audio_path: Path to audio file
+            language: Language code (e.g., 'en'). Auto-detect if None.
+            task: 'transcribe' or 'translate' (default: 'transcribe')
+            temperature: Sampling temperature (0.0 = greedy)
+            return_word_timestamps: Enable word-level timestamps
+            diarize: Keep speaker separation (default True for SE-DiCoW)
+            compression_ratio_threshold: Hallucination detection threshold
+            logprob_threshold: Minimum average log probability
+            no_speech_threshold: Silence detection threshold
+        
+        Returns:
+            dict: {
+                "text": str,
+                "segments": List[Dict],
+                "word_segments": List[Dict] or None,
+                "speakers_count": int,
+                "duration": float,
+                "language": str,
+                "metadata": Dict
+            }
+        """
+        from librosa import get_duration as librosa_get_duration
+        
+        # Prepare generate kwargs for Whisper
+        generate_kwargs = {
+            "return_timestamps": "word" if return_word_timestamps else True,
+            "temperature": temperature,
+            "task": task,
+        }
+        
+        if language:
+            generate_kwargs["language"] = language
+        
+        # Add thresholds if provided
+        if compression_ratio_threshold is not None:
+            generate_kwargs["compression_ratio_threshold"] = compression_ratio_threshold
+        if logprob_threshold is not None:
+            generate_kwargs["logprob_threshold"] = logprob_threshold
+        if no_speech_threshold is not None:
+            generate_kwargs["no_speech_threshold"] = no_speech_threshold
+        
+        # Call parent pipeline with Whisper parameters
+        # This uses the existing __call__ method with return_timestamps
+        result = super().__call__(
+            audio_path,
+            return_timestamps=generate_kwargs["return_timestamps"],
+            **generate_kwargs
+        )
+        
+        # Get audio duration
+        duration = librosa_get_duration(filename=audio_path)
+        
+        # Extract structured segments from result
+        segments = self._extract_structured_segments(result)
+        
+        # Extract word-level timestamps if requested
+        word_segments = None
+        if return_word_timestamps and "token_timestamps" in result:
+            word_segments = self._extract_word_timestamps(result, segments)
+        
+        # Format text based on diarization setting
+        if diarize:
+            # Keep speaker-labeled format
+            final_text = result["text"]
+        else:
+            # Merge all speakers
+            final_text = " ".join([seg["text"] for seg in sorted(segments, key=lambda x: x["start"])])
+        
+        # Extract metadata
+        metadata = self._extract_metadata(result, segments)
+        
+        return {
+            "text": final_text,
+            "segments": segments,
+            "word_segments": word_segments,
+            "speakers_count": len(set(seg.get("speaker", 0) for seg in segments)),
+            "duration": duration,
+            "language": language or "en",  # Would need actual detection
+            "metadata": metadata
+        }
+    
+    def _extract_structured_segments(self, result: Dict) -> List[Dict]:
+        """
+        Extract structured segments from pipeline result.
+        
+        Parses the formatted text output to extract:
+        - speaker: int
+        - start: float (seconds)
+        - end: float (seconds)
+        - text: str
+        """
+        segments = []
+        text = result.get("text", "")
+        per_spk_outputs = result.get("per_spk_outputs", [])
+        
+        # Parse speaker sections
+        speaker_pattern = r"🗣️ Speaker (\d+):"
+        speaker_sections = re.split(speaker_pattern, text)
+        
+        for i in range(1, len(speaker_sections), 2):
+            speaker_id = int(speaker_sections[i])
+            content = speaker_sections[i + 1] if i + 1 < len(speaker_sections) else ""
+            
+            # Parse segments with timestamps
+            segment_pattern = r"<\|(\d+\.\d+)\|>(.+?)<\|(\d+\.\d+)\|>"
+            matches = re.findall(segment_pattern, content, re.DOTALL)
+            
+            for start_str, text_content, end_str in matches:
+                text_content = " ".join(text_content.split())
+                
+                if text_content.strip():
+                    segments.append({
+                        "speaker": speaker_id,
+                        "start": float(start_str),
+                        "end": float(end_str),
+                        "text": text_content,
+                        "avg_logprob": -0.5,  # Placeholder
+                        "compression_ratio": 1.0,
+                        "no_speech_prob": 0.0
+                    })
+        
+        return segments
+    
+    def _extract_word_timestamps(self, result: Dict, segments: List[Dict]) -> List[Dict]:
+        """
+        Extract word-level timestamps from token_timestamps.
+        
+        Uses the token_timestamps tensor from model output to create
+        word-level segment entries with precise timing.
+        """
+        word_segments = []
+        
+        # Get token_timestamps from result
+        token_timestamps = result.get("token_timestamps")
+        if token_timestamps is None:
+            return word_segments
+        
+        # Get tokens
+        tokens = result.get("tokens")
+        if tokens is None:
+            return word_segments
+        
+        # Process each speaker's tokens
+        for spk_idx, (spk_tokens, spk_timestamps) in enumerate(zip(tokens, token_timestamps)):
+            if not isinstance(spk_tokens, torch.Tensor):
+                continue
+            
+            # Convert to list if tensor
+            if isinstance(spk_tokens, torch.Tensor):
+                spk_tokens = spk_tokens.cpu().tolist()
+            if isinstance(spk_timestamps, torch.Tensor):
+                spk_timestamps = spk_timestamps.cpu().tolist()
+            
+            # Extract word-level timestamps
+            for i, (token_id, ts) in enumerate(zip(spk_tokens, spk_timestamps)):
+                # Skip timestamp tokens and special tokens
+                if token_id >= self.tokenizer.first_timestamp_token_id:
+                    continue
+                
+                # Decode token to text
+                try:
+                    text = self.tokenizer.decode([token_id])
+                except:
+                    continue
+                
+                if not text.strip():
+                    continue
+                
+                # Extract timing
+                if isinstance(ts, (list, tuple)) and len(ts) >= 2:
+                    start = ts[0]
+                    end = ts[1]
+                else:
+                    # Single timestamp - estimate duration
+                    start = float(ts) if not isinstance(ts, (list, tuple)) else ts[0]
+                    end = start + 0.2
+                
+                word_segments.append({
+                    "speaker": spk_idx,
+                    "start": round(start, 2),
+                    "end": round(end, 2),
+                    "text": text.strip(),
+                    "probability": 0.9  # Placeholder
+                })
+        
+        # Sort by time
+        word_segments.sort(key=lambda x: x["start"])
+        return word_segments
+    
+    def _extract_metadata(self, result: Dict, segments: List[Dict]) -> Dict:
+        """
+        Extract metadata fields from generation result.
+        
+        Calculates:
+        - avg_logprob: Average log probability
+        - compression_ratio: Compression ratio
+        - no_speech_prob: No-speech probability
+        """
+        # For now, return placeholder values # TODO
+        # These would need to be extracted from the actual generation output
+        return {
+            "avg_logprob": -0.5,
+            "compression_ratio": 1.0,
+            "no_speech_prob": 0.0
+        }

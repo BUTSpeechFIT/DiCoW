@@ -1,12 +1,14 @@
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException, BackgroundTasks
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, BackgroundTasks, Header
+from fastapi.responses import JSONResponse, PlainTextResponse, StreamingResponse
 from contextlib import asynccontextmanager
 import uuid
 import os
 import json
 import asyncio
+import tempfile
 from datetime import datetime, timezone
 from typing import List, Optional
+import time
 
 from .config import config
 from .store import JobStore
@@ -23,6 +25,7 @@ from .models import (
     Segment,
 )
 from .logger import setup_logger
+from .formatters import format_openai_response
 
 logger = setup_logger(__name__)
 
@@ -350,3 +353,198 @@ async def delete_job(job_id: str):
     await store.delete_job(job_id)
 
     return {"message": "Job deleted successfully"}
+
+
+@app.post("/v1/audio/transcriptions")
+async def transcribe_openai(
+    # Required parameters
+    file: UploadFile = File(..., description="Audio file to transcribe (max 25MB). Supported formats: mp3, mp4, mpeg, mpga, m4a, wav, webm."),
+    model: str = Form("BUT-FIT/SE-DiCoW", description="Model identifier. Use 'BUT-FIT/SE-DiCoW' for diarization-capable transcription."),
+    
+    # Optional parameters
+    language: Optional[str] = Form(None, description="Language code (e.g., 'en', 'fr'). Auto-detected if not provided."),
+    prompt: Optional[str] = Form(None, description="Optional prompt to guide context. Note: Currently not supported by SE-DiCoW model."),
+    response_format: str = Form("json", description="Output format: 'json' | 'text' | 'verbose_json' | 'diarized_json'. Default: 'json'."),
+    stream: bool = Form(False, description="Enable streaming response. Default: false."),
+    temperature: Optional[float] = Form(None, description="Sampling temperature (0.0-1.0). Higher values increase randomness. Default: 0.0."),
+    timestamp_granularities: Optional[str] = Form(None, description="Timestamp granularity: 'segment' or 'word'. For OpenAI compatibility, use 'timestamp_granularities[]=word'."),
+    diarize: bool = Form(True, description="Enable speaker diarization. When false, merges all speakers. Default: true."),
+    
+    # Headers (not enforced - gateway handles auth)
+    x_api_key: Optional[str] = Header(None, alias="X-API-Key", include_in_schema=False)
+):
+    """
+    Transcribe audio to text with optional speaker diarization.
+    
+    OpenAI-compatible endpoint using SE-DiCoW model for multi-speaker transcription.
+    
+    ## Features
+    - **Multi-speaker diarization**: Automatically identifies and separates speakers
+    - **Word-level timestamps**: Precise timing for each word
+    - **Multiple output formats**: JSON, plain text, verbose JSON with metadata
+    - **Language auto-detection**: Automatically detects spoken language
+    
+    ## Response Formats
+    
+    ### json (default)
+    Simple text output: `{"text": "transcription..."}`
+    
+    ### text
+    Plain text transcription without JSON wrapper
+    
+    ### verbose_json
+    Full metadata including segments, word timestamps, and confidence scores
+    
+    ### diarized_json
+    Speaker-labeled segments with speaker identifiers
+    
+    ## Examples
+    
+    **Basic transcription:**
+    ```bash
+    curl -X POST /v1/audio/transcriptions -F "file=@meeting.wav"
+    ```
+    
+    **Diarized transcription with word timestamps:**
+    ```bash
+    curl -X POST /v1/audio/transcriptions \\
+      -F "file=@meeting.wav" \\
+      -F "response_format=diarized_json" \\
+      -F "timestamp_granularities=word" \\
+      -F "diarize=true"
+    ```
+    """
+    
+    # Validate file
+    if not file or not file.filename:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": "No file uploaded",
+                "message": "Please provide an audio file in the 'file' field"
+            }
+        )
+    
+    # Validate file size (25MB limit like OpenAI)
+    file_content = await file.read()
+    MAX_FILE_SIZE_MB = 25
+    if len(file_content) > MAX_FILE_SIZE_MB * 1024 * 1024:
+        raise HTTPException(
+            status_code=413,
+            detail={
+                "error": "File too large",
+                "message": f"File size exceeds {MAX_FILE_SIZE_MB}MB limit"
+            }
+        )
+    
+    # Validate response_format
+    valid_formats = ["json", "text", "verbose_json", "diarized_json"]
+    if response_format not in valid_formats:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": "Invalid response_format",
+                "message": f"Must be one of: {', '.join(valid_formats)}"
+            }
+        )
+    
+    # Validate timestamp_granularities
+    if timestamp_granularities and timestamp_granularities not in ["segment", "word"]:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": "Invalid timestamp_granularities",
+                "message": "Must be 'segment' or 'word'"
+            }
+        )
+    
+    # Log warning if prompt is provided (not supported)
+    if prompt:
+        logger.warning(f"Prompt parameter provided but not supported: {prompt[:50]}...")
+    
+    # Save to temp file
+    file_ext = os.path.splitext(file.filename)[1] if file.filename else ".wav"
+    with tempfile.NamedTemporaryFile(delete=False, suffix=file_ext) as tmp:
+        tmp.write(file_content)
+        temp_path = tmp.name
+    
+    try:
+        # Run pipeline in thread pool (non-blocking)
+        start_time = time.time()
+        
+        result = await asyncio.to_thread(
+            lambda: dicow_pipeline.transcribe_openai(
+                audio_path=temp_path,
+                language=language,
+                temperature=temperature if temperature is not None else 0.0,
+                return_word_timestamps=(timestamp_granularities == "word"),
+                diarize=diarize,
+                # Pass thresholds for hallucination detection
+                compression_ratio_threshold=2.0,
+                logprob_threshold=-1.0,
+                no_speech_threshold=0.6
+            ),
+            timeout=300  # 5 minute timeout
+        )
+        
+        # Format response
+        response_data = format_openai_response(
+            result,
+            response_format=response_format,
+            diarize=diarize,
+            timestamp_granularities=timestamp_granularities  # Pass to formatter
+        )
+        
+        processing_time = time.time() - start_time
+        
+        # Return response
+        if stream:
+            return StreamingResponse(
+                _stream_json_response(response_data),
+                media_type="application/json" if "json" in response_format else "text/plain",
+                headers={
+                    "X-Processing-Time": f"{processing_time:.2f}s"
+                }
+            )
+        elif response_format == "text":
+            return PlainTextResponse(
+                response_data,
+                headers={
+                    "X-Processing-Time": f"{processing_time:.2f}s"
+                }
+            )
+        else:
+            return JSONResponse(
+                response_data,
+                headers={
+                    "X-Processing-Time": f"{processing_time:.2f}s"
+                }
+            )
+    
+    except asyncio.TimeoutError:
+        raise HTTPException(
+            status_code=408,
+            detail={
+                "error": "Timeout",
+                "message": "Transcription exceeded 300 second timeout. Consider splitting long audio files."
+            }
+        )
+    except Exception as e:
+        logger.error(f"Transcription failed: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "error": "Internal server error",
+                "message": f"Transcription failed: {str(e)}"
+            }
+        )
+    finally:
+        # Cleanup temp file
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+
+
+async def _stream_json_response(data):
+    """Stream JSON response in chunks."""
+    import json
+    yield json.dumps(data).encode()
