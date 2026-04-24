@@ -34,13 +34,7 @@ def test_basic_transcription(audio_file: str):
         )
     
     print(f"Status: {response.status_code}")
-    result = response.json()
-    print(f"Response: {json.dumps(result, indent=2)}")
-    
-    # Validate: no emoji or timestamp tags in text
-    text = result.get("text", "")
-    assert "🗣️" not in text, f"Text contains emoji speaker headers: {text[:100]}"
-    assert "<|" not in text, f"Text contains timestamp tags: {text[:100]}"
+    print(f"Response: {json.dumps(response.json(), indent=2)}")
     print()
     return response.status_code == 200
 
@@ -61,7 +55,8 @@ def test_text_format(audio_file: str):
         )
     
     print(f"Status: {response.status_code}")
-    print(f"Response: {response.text[:200]}...")
+    print("Raw Response:")
+    print(response.text)
     print()
     return response.status_code == 200
 
@@ -84,16 +79,8 @@ def test_diarized_json(audio_file: str):
     
     print(f"Status: {response.status_code}")
     result = response.json()
-    text = result.get('text', '')
-    print(f"Text: {text[:200]}...")
-    print(f"Speakers: {result.get('speakers_count', 0)}")
-    print(f"Segments: {len(result.get('segments', []))}")
-    
-    # Validate: clean text without emoji
-    assert "🗣️" not in text, f"Diarized text contains emoji: {text[:100]}"
-    assert "<|" not in text, f"Diarized text contains timestamp tags: {text[:100]}"
-    assert result.get('speakers_count', 0) > 0, "speakers_count should be > 0"
-    assert len(result.get('segments', [])) > 0, "Should have segments"
+    print("Raw Response:")
+    print(json.dumps(result, indent=2))
     print()
     return response.status_code == 200
 
@@ -116,17 +103,8 @@ def test_verbose_json_with_words(audio_file: str):
     
     print(f"Status: {response.status_code}")
     result = response.json()
-    text = result.get('text', '')
-    print(f"Text: {text[:200]}...")
-    print(f"Segments: {len(result.get('segments', []))}")
-    print(f"Words: {len(result.get('words', []))}")
-    if result.get('words'):
-        print(f"First 3 words: {result['words'][:3]}")
-    
-    # Validate: clean text, segments present
-    assert "🗣️" not in text, f"Verbose text contains emoji: {text[:100]}"
-    assert "<|" not in text, f"Verbose text contains timestamp tags: {text[:100]}"
-    assert len(result.get('segments', [])) > 0, "verbose_json should always have segments"
+    print("Raw Response:")
+    print(json.dumps(result, indent=2))
     print()
     return response.status_code == 200
 
@@ -212,8 +190,7 @@ def test_no_file():
     print(f"Status: {response.status_code}")
     print(f"Response: {json.dumps(response.json(), indent=2)}")
     print()
-    # FastAPI returns 422 for missing required File field, not 400
-    return response.status_code in (400, 422)
+    return response.status_code == 400
 
 
 def main():

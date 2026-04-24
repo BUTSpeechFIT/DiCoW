@@ -105,30 +105,38 @@ def _format_verbose_json(
 
 def _format_diarized_json(model_output: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Format as diarized JSON with speaker labels.
+    Format as diarized JSON with speaker labels chronologically.
 
-    Builds speaker-labeled text from structured segments (not from
-    the raw text field) to ensure clean output without emoji or tags.
+    Builds an interleaved transcript where speakers appear in order
+    of their segments, making it 'aligned' with the audio timeline.
     """
     segments = model_output.get("segments", [])
-
-    # Build clean speaker-labeled text from segments
-    speaker_texts: Dict[int, List[str]] = {}
-    for seg in sorted(segments, key=lambda s: s.get("start", 0)):
-        spk = seg.get("speaker", 0)
-        if spk not in speaker_texts:
-            speaker_texts[spk] = []
-        speaker_texts[spk].append(seg.get("text", ""))
+    sorted_segments = sorted(segments, key=lambda s: s.get("start", 0))
 
     text_lines = []
-    for spk_id in sorted(speaker_texts.keys()):
-        text_lines.append(f"Speaker {spk_id}: {' '.join(speaker_texts[spk_id])}")
+    last_speaker = None
+    
+    for seg in sorted_segments:
+        spk_id = seg.get("speaker", 0)
+        text = seg.get("text", "").strip()
+        
+        if spk_id != last_speaker:
+            text_lines.append(f"Speaker {spk_id}: {text}")
+            last_speaker = spk_id
+        else:
+            # Continue same speaker on same line or next line depending on preference
+            # Here we append to the last line to keep it compact but aligned
+            if text_lines:
+                text_lines[-1] = f"{text_lines[-1]} {text}"
+            else:
+                text_lines.append(f"Speaker {spk_id}: {text}")
+
     diarized_text = "\n".join(text_lines)
 
     return {
         "text": diarized_text,
         "segments": _format_segments_diarized_openai(segments),
-        "speakers_count": model_output.get("speakers_count", len(speaker_texts)),
+        "speakers_count": model_output.get("speakers_count", 0),
         "duration": model_output.get("duration", 0.0),
     }
 
