@@ -84,51 +84,52 @@ def _format_verbose_json(
     """
     segments = model_output.get("segments", [])
     word_segments = model_output.get("word_segments")
-    
+
     # Base response structure matching OpenAI
     response = {
         "task": "transcribe",
         "language": model_output.get("language", "en"),
         "duration": model_output.get("duration", 0.0),
-        "text": model_output["text"]
+        "text": model_output["text"],
     }
-    
-    # Add segments only when requested or by default
-    if timestamp_granularities is None or timestamp_granularities == "segment":
-        response["segments"] = _format_segments_verbose_openai(segments)
-    
-    # Add words only when explicitly requested
+
+    # Always include segments
+    response["segments"] = _format_segments_verbose_openai(segments)
+
+    # Add words when explicitly requested and available
     if timestamp_granularities == "word" and word_segments:
         response["words"] = _format_word_segments_openai(word_segments)
-    
+
     return response
 
 
 def _format_diarized_json(model_output: Dict[str, Any]) -> Dict[str, Any]:
     """
     Format as diarized JSON with speaker labels.
-    
-    Matches OpenAI's diarized_json format:
-    - text: Transcription with speaker labels
-    - segments: Speaker-separated segments with speaker field
-    - duration: Audio duration
-    
-    OpenAI segment format:
-    {
-        "type": "transcript.text.segment",
-        "id": "seg_001",
-        "start": 0.0,
-        "end": 4.7,
-        "text": "Thanks for calling...",
-        "speaker": "agent"
-    }
+
+    Builds speaker-labeled text from structured segments (not from
+    the raw text field) to ensure clean output without emoji or tags.
     """
     segments = model_output.get("segments", [])
-    
+
+    # Build clean speaker-labeled text from segments
+    speaker_texts: Dict[int, List[str]] = {}
+    for seg in sorted(segments, key=lambda s: s.get("start", 0)):
+        spk = seg.get("speaker", 0)
+        if spk not in speaker_texts:
+            speaker_texts[spk] = []
+        speaker_texts[spk].append(seg.get("text", ""))
+
+    text_lines = []
+    for spk_id in sorted(speaker_texts.keys()):
+        text_lines.append(f"Speaker {spk_id}: {' '.join(speaker_texts[spk_id])}")
+    diarized_text = "\n".join(text_lines)
+
     return {
-        "text": model_output["text"],
+        "text": diarized_text,
         "segments": _format_segments_diarized_openai(segments),
-        "duration": model_output.get("duration", 0.0)
+        "speakers_count": model_output.get("speakers_count", len(speaker_texts)),
+        "duration": model_output.get("duration", 0.0),
     }
 
 

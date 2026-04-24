@@ -472,17 +472,19 @@ async def transcribe_openai(
         # Run pipeline in thread pool (non-blocking)
         start_time = time.time()
         
-        result = await asyncio.to_thread(
-            lambda: dicow_pipeline.transcribe_openai(
-                audio_path=temp_path,
-                language=language,
-                temperature=temperature if temperature is not None else 0.0,
-                return_word_timestamps=(timestamp_granularities == "word"),
-                diarize=diarize,
-                # Pass thresholds for hallucination detection
-                compression_ratio_threshold=2.0,
-                logprob_threshold=-1.0,
-                no_speech_threshold=0.6
+        result = await asyncio.wait_for(
+            asyncio.to_thread(
+                lambda: dicow_pipeline.transcribe_openai(
+                    audio_path=temp_path,
+                    language=language,
+                    temperature=temperature if temperature is not None else 0.0,
+                    return_word_timestamps=(timestamp_granularities == "word"),
+                    diarize=diarize,
+                    # Pass thresholds for hallucination detection
+                    compression_ratio_threshold=2.0,
+                    logprob_threshold=-1.0,
+                    no_speech_threshold=0.6
+                )
             ),
             timeout=300  # 5 minute timeout
         )
